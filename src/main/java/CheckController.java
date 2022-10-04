@@ -82,7 +82,7 @@ public class CheckController {
                 }
                 k++;
             }
-            return ServiceWriter2(services, red, total, "Services");
+            return ServiceWriter2(services, red, total, "services");
     }
     
     public File checkUsefuls(ArrayList<Useful> usefuls) throws IOException {
@@ -127,7 +127,7 @@ public class CheckController {
             total++;
          
         }
-        return UsefulWriter2(usefuls, red, total, "Useful_Links");
+        return UsefulWriter2(usefuls, red, total, "usefulLinks");
     }
     
   public File ServiceWriter2(List<Service> services, int red, int total, String name) throws IOException {
