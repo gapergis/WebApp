@@ -23,12 +23,7 @@ public class CheckController {
         } catch (SocketException e) {
             code = 991;
         } catch (SocketTimeoutException e) {
-//            String error = "java.net.SocketTimeoutException: Connect timed out";
-//            if (e.toString().equals(error)){
-//                code = 996;
-//            }else{
-                code = 992;
-//            }
+            code = 992;
         } catch (SSLHandshakeException e) {
             String error = "javax.net.ssl.SSLHandshakeException: Server chose TLSv1, but that protocol version is not enabled or not supported by the client.";
             String error2 = "javax.net.ssl.SSLHandshakeException: The server selected protocol version TLS10 is not accepted by client preferences [TLS13, TLS12]";
