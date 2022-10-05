@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 /**
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 @WebServlet("/GovServlet")
 public class GovServlet extends HttpServlet {
     private static final long serialVersionUID = 102831973239L;
+    private LocalDateTime dataDate= LocalDateTime.now();
     private ArrayList<Organization> org;
     private ArrayList<Category> cat;
     private ArrayList<Subcategory> sub;
@@ -21,27 +23,26 @@ public class GovServlet extends HttpServlet {
     private ArrayList<Service> services;
 
 
-    /**
-     * Default constructor.
-     */
-    public GovServlet() {
-        if (this.services == null) {
-            this.org = Controller.getOrgData();
-            this.cat = Controller.getCatData();
-            this.sub = Controller.getGegData();
-            this.usefuls = new ArrayList<>();
-            this.services = Controller.getAPIServiceData(org, cat, sub, usefuls);
-            this.usefuls.addAll(Controller.getAPIUsefulData(services));
-        }
-        // TODO Auto-generated constructor stub
-    }
+
+//    public GovServlet() {
+//    }
 
     /**
      * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
      */
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // TODO Auto-generated method stub
+        LocalDateTime now= LocalDateTime.now();
+        if (this.services == null || now.isAfter(dataDate.plusHours(5))) {
+            request.setAttribute("data", "data");
+            this.org = Controller.getOrgData();
+            this.cat = Controller.getCatData();
+            this.sub = Controller.getGegData();
+            this.usefuls = new ArrayList<>();
+            this.services = Controller.getAPIServiceData(org, cat, sub, usefuls);
+            this.usefuls.addAll(Controller.getAPIUsefulData(services));
+            dataDate=now;
+        }
         Controller controller = new Controller();
         CheckController chController = new CheckController();
         CrossCheck cross = new CrossCheck();
