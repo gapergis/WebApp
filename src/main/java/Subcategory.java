@@ -3,10 +3,10 @@
  */
 public class Subcategory {
 
-    public int id;
-    public String name;
-    public int category;
-    public String slug;
+    private int id;
+    private String name;
+    private int category;
+    private String slug;
 
     public Subcategory(int id, String name, int category, String slug) {
         this.id = id;

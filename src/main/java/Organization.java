@@ -3,9 +3,9 @@
  */
 public class Organization {
 
-    public int id;
-    public String name;
-    public String slug;
+    private int id;
+    private String name;
+    private String slug;
 
     @Override
     public String toString() {
@@ -45,14 +45,4 @@ public class Organization {
     public void setId(int id) {
         this.id = id;
     }
-
-    public String getNamebyid(int id) {
-        String name2 = null;
-        if (id == this.id) {
-            name2 = this.name;
-        }
-        return name2;
-    }
-
-
 }

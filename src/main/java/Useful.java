@@ -3,18 +3,18 @@
  */
 public class Useful {
 
-    public int id;
-    public String name;
-    public String url;
-    public int service;
-    public int code;
-    public String status;
-    public String contact;
-    public String slug;
-    public String foreas;
-    public final Boolean perif;
+    private int id;
+    private String name;
+    private String url;
+    private int service;
+    private int code;
+    private String status;
+    private String contact;
+    private String slug;
+    private String foreas;
+    private final Boolean perif;
 
-    public Useful(int id, String name, String url, int code, String status, int service,String foreas, String contact, String slug, Boolean perif) {
+    public Useful(int id, String name, String url, int code, String status, int service, String foreas, String contact, String slug, Boolean perif) {
         this.id = id;
         this.name = name;
         this.url = url;
@@ -24,7 +24,7 @@ public class Useful {
         this.foreas = foreas;
         this.contact = contact;
         this.slug = slug;
-        this.perif= perif;
+        this.perif = perif;
 
     }
 

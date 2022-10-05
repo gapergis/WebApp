@@ -5,15 +5,19 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-import javax.net.ssl.SSLHandshakeException;
 import java.io.*;
-import java.net.*;
-import java.nio.charset.*;
-import java.text.*;
-import java.time.*;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -31,20 +35,10 @@ public class Controller {
         }
     }
 
-    private List<String> getRecordFromLine(String line) {
-        List<String> values = new ArrayList<>();
-        try (Scanner rowScanner = new Scanner(line)) {
-            rowScanner.useDelimiter("^");
-            while (rowScanner.hasNext()) {
-                values.add(rowScanner.next());
-            }
-        }
-        return values;
-    }
 
     public static String getAPIResponse(String getData) { //ανάλογα με το epilogi θα κατέβουν τα αντοίστοιχα δεδομένα
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client;
         builder.connectTimeout(30, TimeUnit.SECONDS);
         builder.readTimeout(30, TimeUnit.SECONDS);
         builder.writeTimeout(30, TimeUnit.SECONDS);
@@ -52,7 +46,7 @@ public class Controller {
         Request request = new Request.Builder().url(getData).build();
         try (Response response = client.newCall(request).execute()) {
             if (response.isSuccessful() && response.body() != null) {
-                return response.body().string();
+                return Objects.requireNonNull(response.body()).string();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -62,18 +56,17 @@ public class Controller {
 
     public static ArrayList<Service> getAPIServiceData(ArrayList<Organization> org, ArrayList<Category> cat, ArrayList<Subcategory> sub, ArrayList<Useful> usefuls) {//μέθοδος για κατέβασμα των δεδομένων για κάθε χώρα (Coviddata)
         ArrayList<Service> services = new ArrayList<>();
-        ArrayList<Useful> usef=new ArrayList<>();
+        ArrayList<Useful> usef = new ArrayList<>();
         String data = null;
         while (data == null) {
             data = getAPIResponse("https://www.gov.gr/api/v1/services/");
         }
         try {
-            JsonParser jparser = new JsonParser();
-            JsonArray outer = (JsonArray) jparser.parse(data);
+            JsonArray outer = (JsonArray) JsonParser.parseString(data);
             for (Object object : outer) {
-                JsonObject objServ = (JsonObject) jparser.parse(object.toString());
+                JsonObject objServ = (JsonObject) JsonParser.parseString(object.toString());
                 if (objServ.get("active").getAsBoolean()) {
-                    Service service=null;
+                    Service service;
                     if (!serviceExists(services, objServ.get("id").getAsInt())) {
                         String title = objServ.get("title").getAsString();
                         String catslug = getCatSlug(sub, cat, objServ.get("sub_category").getAsInt());
@@ -89,16 +82,16 @@ public class Controller {
                         String url = "Https://www.gov.gr/ipiresies/" + catslug + "/" + subCatslug + "/" + objServ.get("slug").getAsString();
                         String orga;
                         if (objServ.getAsJsonArray("regions").size() != 0) {
-                            int i=1;
+                            int i = 1;
                             for (Object reg : objServ.getAsJsonArray("regions")) {
-                                JsonObject orgServ = (JsonObject) jparser.parse(reg.toString());
+                                JsonObject orgServ = (JsonObject) JsonParser.parseString(reg.toString());
                                 orga = orgServ.get("region_title").getAsString();
-                                service = new Service(objServ.get("id").getAsInt(), title, url, orgServ.get("url").getAsString(),objServ.get("description").getAsString(), "No Contact Info", objServ.get("slug").getAsString(), orga, urlSupport, 0, "", objServ.get("active").getAsBoolean(), getCatName(sub, cat, objServ.get("sub_category").getAsInt()), getSubName(sub, objServ.get("sub_category").getAsInt()), objServ.get("modified_timestamp").getAsString());
+                                service = new Service(objServ.get("id").getAsInt(), title, url, orgServ.get("url").getAsString(), objServ.get("description").getAsString(), "No Contact Info", objServ.get("slug").getAsString(), orga, urlSupport, 0, "", objServ.get("active").getAsBoolean(), getCatName(sub, cat, objServ.get("sub_category").getAsInt()), getSubName(sub, objServ.get("sub_category").getAsInt()), objServ.get("modified_timestamp").getAsString());
                                 services.add(service);
-                                for (Object regsup: objServ.getAsJsonArray("service_region_useful_links")){
-                                    JsonObject regsupport = (JsonObject) jparser.parse(regsup.toString());
-                                    if (orgServ.get("region_slug").getAsString().equals(regsupport.get("region_slug").getAsString())){
-                                        Useful useful=new Useful(i++,regsupport.get("title").getAsString(), regsupport.get("url").getAsString(), 0 , "",objServ.get("id").getAsInt(),orgServ.get("region_title").getAsString(),"No Contact Info", "", true);
+                                for (Object regsup : objServ.getAsJsonArray("service_region_useful_links")) {
+                                    JsonObject regsupport = (JsonObject) JsonParser.parseString(regsup.toString());
+                                    if (orgServ.get("region_slug").getAsString().equals(regsupport.get("region_slug").getAsString())) {
+                                        Useful useful = new Useful(i++, regsupport.get("title").getAsString(), regsupport.get("url").getAsString(), 0, "", objServ.get("id").getAsInt(), orgServ.get("region_title").getAsString(), "No Contact Info", "", true);
                                         usef.add(useful);
                                     }
                                 }
@@ -106,16 +99,16 @@ public class Controller {
                         } else if (objServ.getAsJsonArray("service_actions").size() != 0) {
                             JsonArray serviceActions = objServ.getAsJsonArray("service_actions");
                             for (Object inObject : serviceActions) {
-                                JsonObject inObj = (JsonObject) jparser.parse(inObject.toString());
-                                service = new Service(objServ.get("id").getAsInt(), title, url, inObj.get("url").getAsString(),objServ.get("description").getAsString(), "No Contact Info", objServ.get("slug").getAsString(), getOrgName(org, foreas), urlSupport, 0, "", objServ.get("active").getAsBoolean(), getCatName(sub, cat, objServ.get("sub_category").getAsInt()), getSubName(sub, objServ.get("sub_category").getAsInt()), objServ.get("modified_timestamp").getAsString());
+                                JsonObject inObj = (JsonObject) JsonParser.parseString(inObject.toString());
+                                service = new Service(objServ.get("id").getAsInt(), title, url, inObj.get("url").getAsString(), objServ.get("description").getAsString(), "No Contact Info", objServ.get("slug").getAsString(), getOrgName(org, foreas), urlSupport, 0, "", objServ.get("active").getAsBoolean(), getCatName(sub, cat, objServ.get("sub_category").getAsInt()), getSubName(sub, objServ.get("sub_category").getAsInt()), objServ.get("modified_timestamp").getAsString());
                                 services.add(service);
                             }
-                            if(!urlSupport.equals("")){
-                                Useful useful=new Useful(0, "Επικοινωνία", urlSupport, 0 , "",objServ.get("id").getAsInt(),getOrgName(org, foreas),"No Contact Info", "epikoinonia", false);
+                            if (!urlSupport.equals("")) {
+                                Useful useful = new Useful(0, "Επικοινωνία", urlSupport, 0, "", objServ.get("id").getAsInt(), getOrgName(org, foreas), "No Contact Info", "epikoinonia", false);
                                 usef.add(useful);
                             }
                         } else {
-                            service = new Service(objServ.get("id").getAsInt(), title, url, "",objServ.get("description").getAsString(), "No Contact Info", objServ.get("slug").getAsString(), getOrgName(org, foreas), urlSupport, 0, "", objServ.get("active").getAsBoolean(), getCatName(sub, cat, objServ.get("sub_category").getAsInt()), getSubName(sub, objServ.get("sub_category").getAsInt()), objServ.get("modified_timestamp").getAsString());
+                            service = new Service(objServ.get("id").getAsInt(), title, url, "", objServ.get("description").getAsString(), "No Contact Info", objServ.get("slug").getAsString(), getOrgName(org, foreas), urlSupport, 0, "", objServ.get("active").getAsBoolean(), getCatName(sub, cat, objServ.get("sub_category").getAsInt()), getSubName(sub, objServ.get("sub_category").getAsInt()), objServ.get("modified_timestamp").getAsString());
                             services.add(service);
                         }
                     }
@@ -131,16 +124,15 @@ public class Controller {
 
     public static ArrayList<Useful> getAPIUsefulData(ArrayList<Service> ser) {//μέθοδος για κατέβασμα των δεδομένων για κάθε χώρα (Coviddata)
         ArrayList<Useful> usefuls = new ArrayList<>();
-        String data= null;
+        String data = null;
         while (data == null) {
             data = getAPIResponse("https://www.gov.gr/api/v1/service-useful-links/");
         }
         try {
-            JsonParser jparser = new JsonParser();
-            JsonArray outer = (JsonArray) jparser.parse(data);
+            JsonArray outer = (JsonArray) JsonParser.parseString(data);
             for (Object object : outer) {
                 Useful useful;
-                JsonObject objServ = (JsonObject) jparser.parse(object.toString());
+                JsonObject objServ = (JsonObject) JsonParser.parseString(object.toString());
                 String title = objServ.get("title").getAsString();
                 int service = 0;
                 if (!objServ.get("service").isJsonNull()) {
@@ -151,10 +143,8 @@ public class Controller {
                     if (!objServ.get("url").isJsonNull()) {
                         url = objServ.get("url").getAsString();
                     }
-           //         if (!objServ.get("slug").getAsString().contains("periph")) {
-                        useful = new Useful(objServ.get("id").getAsInt(), title, url, 0, "", service, getServFor(ser, service), "No Contact Info", objServ.get("slug").getAsString(), false);
-                        usefuls.add(useful);
-            //        }
+                    useful = new Useful(objServ.get("id").getAsInt(), title, url, 0, "", service, getServFor(ser, service), "No Contact Info", objServ.get("slug").getAsString(), false);
+                    usefuls.add(useful);
                 }
             }
             System.out.println(usefuls.size());
@@ -169,12 +159,11 @@ public class Controller {
         while (data == null) {
             data = getAPIResponse("https://www.gov.gr/api/v1/organizations/");
         }
-        JsonParser jparser = new JsonParser();
-        JsonArray outer = (JsonArray) jparser.parse(data);
+        JsonArray outer = (JsonArray) JsonParser.parseString(data);
         System.out.println(outer.size());
         ArrayList<Organization> orgData = new ArrayList<>();
         for (Object object : outer) {
-            JsonObject objServ = (JsonObject) jparser.parse(object.toString());
+            JsonObject objServ = (JsonObject) JsonParser.parseString(object.toString());
             String title = getAPIMinistryName(objServ.get("title").getAsString());
             Organization org = new Organization(objServ.get("id").getAsInt(), title, objServ.get("slug").getAsString());
             orgData.add(org);
@@ -188,63 +177,29 @@ public class Controller {
             data = getAPIResponse("https://www.gov.gr/api/v1/ministries/");
         }
         try {
-            JsonParser jparser = new JsonParser();
-            JsonArray outer = (JsonArray) jparser.parse(data);
+            JsonArray outer = (JsonArray) JsonParser.parseString(data);
             for (Object object : outer) {
-                JsonObject objMin = (JsonObject) jparser.parse(object.toString());
-                if (objMin.get("title").getAsString().replace("Υπουργείο ","").equals(title)) {
+                JsonObject objMin = (JsonObject) JsonParser.parseString(object.toString());
+                if (objMin.get("title").getAsString().replace("Υπουργείο ", "").equals(title)) {
                     return objMin.get("title").getAsString();
                 }
             }
-        }
-        catch (UnsupportedOperationException e) {
+        } catch (UnsupportedOperationException e) {
             System.out.println(e);
         }
         return title;
     }
 
-    public int getURLResponse(int id, URL url) {
-        String urlToCall = url.toString();
-        OkHttpClient client = new OkHttpClient();
-        Request request = new Request.Builder().url(urlToCall).build();
-        int code;
-        try (Response response = client.newCall(request).execute()) {
-            code = response.code();
-        } catch (SocketException e) {
-            code = 991;
-        } catch (SocketTimeoutException e) {
-            code = 992;
-        } catch (SSLHandshakeException e) {
-            String error = "javax.net.ssl.SSLHandshakeException: Server chose TLSv1, but that protocol version is not enabled or not supported by the client.";
-            String error2 = "javax.net.ssl.SSLHandshakeException: The server selected protocol version TLS10 is not accepted by client preferences [TLS13, TLS12]";
-            String error3 = "javax.net.ssl.SSLHandshakeException: PKIX path validation failed: java.security.cert.CertPathValidatorException: validity check failed";
-            String error4 = "javax.net.ssl.SSLHandshakeException: Remote host terminated the handshake";
-            if (e.toString().equals(error) || e.toString().equals(error2) || e.toString().equals(error3) || e.toString().equals(error4)) {
-                code = 995;
-            } else {
-                code = 994;
-            }
-        } catch (UnknownHostException e) {
-            code = 993;
-        } catch (ProtocolException e) {
-            code = 990;
-        } catch (IOException e) {
-            code = 0;
-        }
-        return code;
-    }
-
-    public static ArrayList<Category> getCatData()  {
+    public static ArrayList<Category> getCatData() {
         String data = null;
         while (data == null) {
             data = getAPIResponse("https://www.gov.gr/api/v1/categories/");
         }
-        JsonParser jparser = new JsonParser();
-        JsonArray outer = (JsonArray) jparser.parse(data);
+        JsonArray outer = (JsonArray) JsonParser.parseString(data);
         System.out.println(outer.size());
         ArrayList<Category> catData = new ArrayList<>();
         for (Object object : outer) {
-            JsonObject objServ = (JsonObject) jparser.parse(object.toString());
+            JsonObject objServ = (JsonObject) JsonParser.parseString(object.toString());
             String title = objServ.get("title").getAsString();
             Category cat = new Category(objServ.get("id").getAsInt(), title, objServ.get("slug").getAsString());
             catData.add(cat);
@@ -257,12 +212,11 @@ public class Controller {
         while (data == null) {
             data = getAPIResponse("https://www.gov.gr/api/v1/subcategories/");
         }
-        JsonParser jparser = new JsonParser();
-        JsonArray outer = (JsonArray) jparser.parse(data);
+        JsonArray outer = (JsonArray) JsonParser.parseString(data);
         System.out.println(outer.size());
         ArrayList<Subcategory> gegData = new ArrayList<>();
         for (Object object : outer) {
-            JsonObject objServ = (JsonObject) jparser.parse(object.toString());
+            JsonObject objServ = (JsonObject) JsonParser.parseString(object.toString());
             String title = objServ.get("title").getAsString();
             Subcategory sub = new Subcategory(objServ.get("id").getAsInt(), title, objServ.get("category").getAsInt(), objServ.get("slug").getAsString());
             gegData.add(sub);
@@ -272,7 +226,7 @@ public class Controller {
 
     public static boolean serviceExists(ArrayList<Service> services, int id) {
         for (Service service : services) {
-            if (service.id == id) {
+            if (service.getId() == id) {
                 return true;
             }
         }
@@ -375,12 +329,10 @@ public class Controller {
     }
 
     public File ServiceWriter(ArrayList<Service> services) throws IOException {
-    	
-    	String result= new String();
-        ArrayList<Integer> printed=new ArrayList<>();
+
+        ArrayList<Integer> printed = new ArrayList<>();
         File temp = new File(Controller.class.getProtectionDomain().getCodeSource().getLocation().getPath());
         String path = temp.getParent();
-        //String decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
         File fileName = new File(path + "/serviceExport.csv");
         System.out.println(path);
         FileOutputStream file = new FileOutputStream(fileName);
@@ -403,26 +355,25 @@ public class Controller {
                     .append("Url επικοινωνίας")
                     .append('\n');
             for (Service service : services) {
-                if(!printed.contains(service.id)) {
-                        sb.append(service.getId())
+                if (!printed.contains(service.getId())) {
+                    sb.append(service.getId())
                             .append('^')
-                            .append(service.category)
+                            .append(service.getCategory())
                             .append('^')
-                            .append(service.subCat)
+                            .append(service.getSubCat())
+                            .append('^').append("=HYPERLINK(\"").append(service.getUrl()).append("\",\"").append(service.getName()).append("\")")
                             .append('^')
-                            .append("=HYPERLINK(\"" + service.url + "\",\"" + service.name + "\")")
+                            .append(service.getOrgTitle())
                             .append('^')
-                            .append(service.orgTitle)
+                            .append(getModDate(service.getModTime()))
                             .append('^')
-                            .append(getModDate(service.modTime))
-                            .append('^')
-                            .append(service.urlEisodou)
+                            .append(service.getUrlEisodou())
                             .append('\n');
-                        printed.add(service.id);
+                    printed.add(service.getId());
                 }
             }
             wr.write(sb.toString());
-            System.out.println(printed.size());
+            wr.flush();
         } catch (IOException | ParseException ex) {
             System.out.println(ex);
         }
@@ -430,7 +381,6 @@ public class Controller {
     }
 
     public void UsefulWriter(ArrayList<Service> services, List<Useful> usefuls) throws IOException {
-        ArrayList<Integer> printed=new ArrayList<>();
         File temp = new File(Controller.class.getProtectionDomain().getCodeSource().getLocation().getPath());
         String path = temp.getParent();
         File fileName = new File(path + "/UsefulExport.csv");
@@ -455,22 +405,23 @@ public class Controller {
             for (Useful useful : usefuls) {
                 if (useful.getStatus().equals("red")) {
                     sb.append('\n')
-                    .append(useful.getId())
-                    .append('^')
-                    .append(useful.getName())
-                    .append('^')
-                    .append(useful.getUrl())
-                    .append('^')
-                    .append(getServName(services, useful.getService()))
-                    .append('^')
-                    .append(getServFor(services, useful.getService()))
-                    .append('^')
-                    .append(useful.getCode())
-                    .append('^')
-                    .append(useful.getStatus());
+                            .append(useful.getId())
+                            .append('^')
+                            .append(useful.getName())
+                            .append('^')
+                            .append(useful.getUrl())
+                            .append('^')
+                            .append(getServName(services, useful.getService()))
+                            .append('^')
+                            .append(getServFor(services, useful.getService()))
+                            .append('^')
+                            .append(useful.getCode())
+                            .append('^')
+                            .append(useful.getStatus());
                 }
             }
             wr.write(sb.toString());
+            wr.flush();
         } catch (IOException ex) {
             System.out.println(ex);
         }

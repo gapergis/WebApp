@@ -13,7 +13,7 @@ import java.util.List;
 
 public class CheckController {
 
-    public int getURLResponse(int id, URL url) {
+    public int getURLResponse(URL url) {
         String urlToCall = url.toString();
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder().url(urlToCall).build();
@@ -45,91 +45,70 @@ public class CheckController {
     }
 
     public File checkServices(ArrayList<Service> services) throws IOException {
-        int green=0,yellow=0,red=0,total=0;
-        	Integer code;
-            int k = 1;
-            for (Service s : services) {
-                if (Controller.isUrlValid(s.getUrlEisodou())) {
-                    try {
-                        URL url = new URL(s.getUrlEisodou());
-                        code = getURLResponse(s.getId(), url);
-                        s.setCode(code);
-                        if (code.equals(200) || code.equals(401) || code.equals(994)) {
-                            s.setStatus("green");
-                            green++;
-                        } else if (code.equals(406) || code.equals(500) || code.equals(990) || code.equals(992) ) {
-                            s.setStatus("yellow");
-                            yellow++;
-                        } else if (code.equals(403) || code.equals(400) || code.equals(404) || code.equals(503) || code.equals(991)  || code.equals(993) || code.equals(995) || code.equals(996) || code.equals(0)) {
-                            s.setStatus("red");
-                            red++;
-                        }
-                        total++;
-                    } catch (MalformedURLException ex) {
-                        ex.printStackTrace();
+        int red = 0, total = 0;
+        Integer code;
+        int k = 1;
+        for (Service s : services) {
+            if (Controller.isUrlValid(s.getUrlEisodou())) {
+                try {
+                    URL url = new URL(s.getUrlEisodou());
+                    code = getURLResponse(url);
+                    s.setCode(code);
+                    if (code.equals(403) || code.equals(400) || code.equals(404) || code.equals(503) || code.equals(991) || code.equals(993) || code.equals(995) || code.equals(996) || code.equals(0)) {
+                        s.setStatus("red");
+                        red++;
                     }
-                } else {
-                    s.setStatus("invalid");
-                    s.setCode(999);
+                    total++;
+                } catch (MalformedURLException ex) {
+                    ex.printStackTrace();
                 }
-                if (k % 100 == 0) {
-                    System.out.println("Checking " + k + " / " + services.size());
-                }
-                k++;
+            } else {
+                s.setStatus("invalid");
+                s.setCode(999);
             }
-            return ServiceWriter2(services, red, total, "services");
+            if (k % 100 == 0) {
+                System.out.println("Checking " + k + " / " + services.size());
+            }
+            k++;
+        }
+        return ServiceWriter2(services, red, total, "services");
     }
-    
+
     public File checkUsefuls(ArrayList<Useful> usefuls) throws IOException {
-    	int green=0,yellow=0,red=0,total=0, invalid=0;
+        int red = 0, total = 0;
         Integer code;
         int k = 1;
         for (Useful u : usefuls) {
             if (Controller.isUrlValid(u.getUrl())) {
                 try {
                     URL url = new URL(u.getUrl());
-                    code = getURLResponse(u.getId(), url);
+                    code = getURLResponse(url);
                     u.setCode(code);
-                    if (code.equals(200) || code.equals(401) || code.equals(994)) {
-                        u.setStatus("green");
-                    } else if (code.equals(406) || code.equals(500) || code.equals(990) || code.equals(992)) {
-                        u.setStatus("yellow");
-                    } else if (code.equals(403) || code.equals(404) || code.equals(503) || code.equals(991) || code.equals(993) || code.equals(995) || code.equals(996) || code.equals(000)) {
+                    if (code.equals(403) || code.equals(404) || code.equals(503) || code.equals(991) || code.equals(993) || code.equals(995) || code.equals(996) || code.equals(0)) {
                         u.setStatus("red");
+                        red++;
                     }
                 } catch (MalformedURLException ex) {
                     ex.printStackTrace();
                 }
             } else {
-                u.setStatus("invalid");
+                u.setStatus("red");
+                red++;
                 u.setCode(999);
             }
             if (k % 100 == 0) {
                 System.out.println("Checking " + k + " / " + usefuls.size());
             }
-            k++;
-        }
-        for (Useful u : usefuls) {
-            if (u.getStatus().equals("green")) {
-                green++;
-            } else if (u.getStatus().equals("yellow")) {
-                yellow++;
-            } else if (u.getStatus().equals("red")) {
-                red++;
-            } else if (u.getStatus().equals("invalid")) {
-                invalid++;
-            }
             total++;
-         
+            k++;
         }
         return UsefulWriter2(usefuls, red, total, "usefulLinks");
     }
-    
-  public File ServiceWriter2(List<Service> services, int red, int total, String name) throws IOException {
+
+    public File ServiceWriter2(List<Service> services, int red, int total, String name) throws IOException {
         File temp = new File(CheckController.class.getProtectionDomain().getCodeSource().getLocation().getPath());
         String path = temp.getParent();
-    //    String decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
-        File fileName = new File(path + "/" + name  + "_bad.csv");
+        File fileName = new File(path + "/" + name + "_bad.csv");
         FileOutputStream file = new FileOutputStream(fileName);
         try (BufferedWriter wr = new BufferedWriter(new OutputStreamWriter(file, StandardCharsets.UTF_8))) {
             StringBuilder sb = new StringBuilder();
@@ -183,8 +162,7 @@ public class CheckController {
     public File UsefulWriter2(List<Useful> usefuls, int red, int total, String name) throws IOException {
         File temp = new File(CheckController.class.getProtectionDomain().getCodeSource().getLocation().getPath());
         String path = temp.getParent();
-    //    String decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
-        File fileName = new File(path + "/" + name  + "_bad.csv");
+        File fileName = new File(path + "/" + name + "_bad.csv");
         FileOutputStream file = new FileOutputStream(fileName);
         try (BufferedWriter wr = new BufferedWriter(new OutputStreamWriter(file, StandardCharsets.UTF_8))) {
             StringBuilder sb = new StringBuilder();

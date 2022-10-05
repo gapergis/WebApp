@@ -6,6 +6,7 @@ public class Category {
     public int id;
     public String name;
     public String slug;
+
     public Category(int id, String name, String slug) {
         this.id = id;
         this.name = name;
