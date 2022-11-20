@@ -1,14 +1,14 @@
 <component name="ArtifactManager">
-  <artifact type="war" name="WebApp:war">
+  <artifact type="war" name="GovWebApp:war">
     <output-path>$PROJECT_DIR$/target</output-path>
     <properties id="maven-jee-properties">
       <options>
-        <module>WebApp</module>
+        <module>GovWebApp</module>
         <packaging>war</packaging>
       </options>
     </properties>
     <root id="archive" name="GovWebApp-1.0-SNAPSHOT.war">
-      <element id="artifact" artifact-name="WebApp:war exploded" />
+      <element id="artifact" artifact-name="GovWebApp:war exploded" />
     </root>
   </artifact>
 </component>
