@@ -19,7 +19,9 @@ public class CrossCheck {
     }
 
     public String checkOrg(ArrayList<Organization> org, Object jsonData) { //elegxos forea
+
         StringBuilder report = new StringBuilder("Organizations: \n");
+
         JSONObject data = (JSONObject) jsonData;
         JSONArray orgs = data.getJSONArray("Organizations");
 
@@ -35,7 +37,7 @@ public class CrossCheck {
                 }
             }
             if (!found) {
-                String newOrg = "new: " + o.getId() + " , " + o.getName() + "\n";
+                String newOrg = "new" +"^"+ o.getId() + "^" + o.getTitle() + "\n";
                 report.append(newOrg);
             }
         }
@@ -51,7 +53,7 @@ public class CrossCheck {
                 }
             }
             if (!found) {
-                String remSer = "removed: " + objServ.get("id") + " , " + objServ.get("name").getAsString() + "\n";
+                String remSer = "removed" + "^" + objServ.get("id") + "^" + objServ.get("name").getAsString() + "\n";
                 report.append(remSer);
             }
         }
@@ -71,13 +73,13 @@ public class CrossCheck {
             for (Object object : cats) {
                 JsonObject objServ = (JsonObject) JsonParser.parseString(object.toString());
                 int objId = objServ.get("id").getAsInt();
-                if (c.id == objId) {
+                if (c.getId() == objId) {
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                String newCat = "new" + "^" + c.id + "^" + c.name + "\n";
+                String newCat = "new" + "^" + c.getId() + "^"+ c.getTitle() + "\n";
                 report.append(newCat);
             }
         }
@@ -87,13 +89,13 @@ public class CrossCheck {
             JsonObject objServ = (JsonObject) JsonParser.parseString(object.toString());
             boolean found = false;
             for (Category c : cat) {
-                if (c.id == objServ.get("id").getAsInt()) {
+                if (c.getId() == objServ.get("id").getAsInt()) {
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                String remCat = "removed: " + "^" + objServ.get("id") + "^" + objServ.get("name").getAsString() + "\n";
+                String remCat = "removed" + "^" +  objServ.get("id") + "^"+ objServ.get("name").getAsString() + "\n";
                 report.append(remCat);
             }
         }
@@ -103,7 +105,6 @@ public class CrossCheck {
     public String checkSub(ArrayList<Subcategory> geg, Object jsonData) { //elegxos gegonos zois
 
         StringBuilder report = new StringBuilder("Life Events: \n");
-
         JSONObject data = (JSONObject) jsonData;
         JSONArray gegs = data.getJSONArray("Gegonota");
 
@@ -119,7 +120,7 @@ public class CrossCheck {
                 }
             }
             if (!found) {
-                String newGeg = "new" + "^" + g.getId() + "^" + g.getName() + "\n";
+                String newGeg = "new" + "^" + g.getId()  + "^" + g.getTitle() + "\n";
                 report.append(newGeg);
             }
         }
@@ -135,22 +136,23 @@ public class CrossCheck {
                 }
             }
             if (!found) {
-                String remGeg = "removed" + "^" + objServ.get("id") + "^" + objServ.get("name").getAsString() + "\n";
+                String remGeg = "removed" + "^" + objServ.get("id") + "^"+ objServ.get("name").getAsString() + "\n";
                 report.append(remGeg);
             }
         }
         return report.toString();
     }
 
-    public String checkService(ArrayList<Service> services, Object jsonData) { //elegxos upiresiwn
-
+    public String checkService(Data govData, Object jsonData) { //elegxos upiresiwn
+        Controller controller = new Controller();
         StringBuilder report = new StringBuilder("Services: \n");
+
         JSONObject data = (JSONObject) jsonData;
         JSONArray servs = data.getJSONArray("Services");
 
         //Elegxos gia prosthiki ypiresias
         ArrayList<Integer> addedSer = new ArrayList<>();
-        for (Service s : services) {
+        for (Service s : govData.services) {
             boolean found = false;
             for (Object object : servs) {
                 JsonObject objServ = (JsonObject) JsonParser.parseString(object.toString());
@@ -162,8 +164,8 @@ public class CrossCheck {
             }
             if (!found && !addedSer.contains(s.getId())) {
                 addedSer.add(s.getId());
-                String refURI = "Αρχική / " + s.getCategory() + " / " + s.getSubCat() + " / " + s.getName();
-                String newSer = "new" + "^" + s.getId() + "^" + "=HYPERLINK(\"" + s.getUrl() + "\",\"" + refURI + "\")" + "^" + s.getOrgTitle() + "\n";
+                String refURI = "Αρχική / "+ controller.getCatName(govData.cats,govData.subs, s.getSub_category())+" / "+controller.getSubName(govData.subs, s.getSub_category()) + " / " + s.getTitle();
+                String newSer = "new" + "^" + s.getId() + "^" + "=HYPERLINK(\"" + controller.createBread(govData, s.getId()) + "\",\"" + refURI + "\")" + "^" +  controller.getOrgName(govData, s.getOrganization()) + "\n";
                 report.append(newSer);
             }
         }
@@ -173,7 +175,7 @@ public class CrossCheck {
         for (Object object : servs) {
             JsonObject objServ = (JsonObject) JsonParser.parseString(object.toString());
             boolean found = false;
-            for (Service s : services) {
+            for (Service s : govData.services) {
                 if (s.getId() == objServ.get("id").getAsInt()) {
                     found = true;
                     break;
@@ -181,7 +183,8 @@ public class CrossCheck {
             }
             if (!found && !removedSer.contains(objServ.get("id").getAsInt())) {
                 removedSer.add(objServ.get("id").getAsInt());
-                String remSer = "removed" + "^" + objServ.get("id") + "^" + objServ.get("refURI").getAsString() + "^" + objServ.get("org").getAsString() + "\n";
+//                String remSer = "removed^ " + objServ.get("id") + "^" + "=HYPERLINK(\"" + objServ.get("url").getAsString() + "\",\"" + objServ.get("refURI").getAsString() + "\")"+ "^" + objServ.get("org").getAsString() + "\n";
+                String remSer = "removed"+ "^" + objServ.get("id") + "^" + objServ.get("refURI").getAsString() + "^" + objServ.get("org").getAsString() + "\n";
                 report.append(remSer);
             }
         }
@@ -190,53 +193,53 @@ public class CrossCheck {
     }
 
 
-    public void updateJson(ArrayList<Organization> org, ArrayList<Category> cat, ArrayList<Subcategory> geg, ArrayList<Service> services) throws FileNotFoundException {
 
+    public void updateJson(Data govData) throws FileNotFoundException {
+        Controller controller = new Controller();
         File temp = new File(CrossCheck.class.getProtectionDomain().getCodeSource().getLocation().getPath());
         String path = temp.getParent();
         path = path + "/crossCheck.json";
 
         JSONArray orgs = new JSONArray();
-        for (Organization o : org) {
+        for (Organization o : govData.orgs) {
             JSONObject obj = new JSONObject()
                     .put("id", o.getId())
-                    .put("name", o.getName())
+                    .put("name", o.getTitle())
                     .put("slug", o.getSlug());
             orgs.put(obj);
         }
 
         JSONArray cats = new JSONArray();
-        for (Category c : cat) {
+        for (Category c : govData.cats) {
             JSONObject obj = new JSONObject()
-                    .put("id", c.id)
-                    .put("name", c.name)
-                    .put("slug", c.slug);
+                    .put("id", c.getId())
+                    .put("name", c.getTitle())
+                    .put("slug", c.getSlug());
             cats.put(obj);
         }
 
         JSONArray gegs = new JSONArray();
-        for (Subcategory g : geg) {
+        for (Subcategory g : govData.subs) {
             JSONObject obj = new JSONObject()
                     .put("id", g.getId())
-                    .put("name", g.getName())
+                    .put("name", g.getTitle())
                     .put("slug", g.getSlug())
                     .put("category", g.getCategory());
             gegs.put(obj);
         }
 
-
         JSONArray servs = new JSONArray();
         ArrayList<Integer> unID = new ArrayList<>();
-        for (Service s : services) {
+        for (Service s : govData.services) {
             if (!unID.contains(s.getId())) {
                 //    System.out.println(s.id);
                 JSONObject obj = new JSONObject()
                         .put("id", s.getId())
-                        .put("name", s.getName())
-                        .put("org", s.getOrgTitle())
-                        .put("url", s.getUrl())
+                        .put("name", s.getTitle())
+                        .put ("org", controller.getOrgName(govData, s.getOrganization()))
+                        .put("url", controller.createBread(govData, s.getId()))
                         .put("slug", s.getSlug())
-                        .put("refURI", "Αρχική / " + s.getCategory() + " / " + s.getSubCat() + " / " + s.getName());
+                        .put("refURI", "Αρχική / "+ controller.getCatName(govData.cats,govData.subs, s.getSub_category())+" / "+controller.getSubName(govData.subs, s.getSub_category()) + " / " + s.getTitle());
                 servs.put(obj);
                 unID.add(s.getId());
             }
@@ -255,15 +258,15 @@ public class CrossCheck {
         }
     }
 
-    public File checkGov(ArrayList<Organization> org, ArrayList<Category> cat, ArrayList<Subcategory> geg, ArrayList<Service> services) throws FileNotFoundException {
+    public File checkGov(Data govData) throws FileNotFoundException {
 
         String report = "Report \n\n";
         System.out.println("Reading json file...");
         Object data = readJson();
-        report = report + checkOrg(org, data) + "\n";
-        report = report + checkCat(cat, data) + "\n";
-        report = report + checkSub(geg, data) + "\n";
-        report = report + checkService(services, data);
+        report= report + checkOrg(govData.orgs, data) + "\n";
+        report= report + checkCat(govData.cats, data) + "\n";
+        report= report + checkSub(govData.subs, data) + "\n";
+        report= report + checkService(govData, data);
         System.out.println("Creating report...");
         return createReport(report);
     }
@@ -276,8 +279,8 @@ public class CrossCheck {
         FileOutputStream file = new FileOutputStream(fileName);
         try (BufferedWriter wr = new BufferedWriter(new OutputStreamWriter(file, StandardCharsets.UTF_8))) {
             wr.write(report);
-        } catch (IOException ex) {
-            System.out.println(ex);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         return fileName;
     }

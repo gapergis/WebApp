@@ -4,68 +4,57 @@
 public class Useful {
 
     private int id;
-    private String name;
-    private String url;
-    private int service;
-    private int code;
-    private String status;
-    private String contact;
+    private boolean selected;
     private String slug;
-    private String foreas;
-    private final Boolean perif;
+    private String url;
+    private String description;
+    private String title;
+    private int service;
 
-    public Useful(int id, String name, String url, int code, String status, int service, String foreas, String contact, String slug, Boolean perif) {
-        this.id = id;
-        this.name = name;
-        this.url = url;
-        this.code = code;
-        this.status = status;
-        this.service = service;
-        this.foreas = foreas;
-        this.contact = contact;
-        this.slug = slug;
-        this.perif = perif;
+    private int code;
 
-    }
+    private String status;
+
+//    public Useful(float id, boolean selected, String slug, String url, String description, String title, float service, int code, String status) {
+//        this.id = id;
+//        this.selected = selected;
+//        this.slug = slug;
+//        this.url = url;
+//        this.description = description;
+//        this.title = title;
+//        this.service = service;
+//        this.code = code;
+//        this.status = status;
+//    }
+
+    // Getter Methods
 
     public int getId() {
         return id;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public boolean getSelected() {
+        return selected;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public String getSlug() {
+        return slug;
     }
 
     public String getUrl() {
         return url;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public String getDescription() {
+        return description;
+    }
+
+    public String getTitle() {
+        return title;
     }
 
     public int getService() {
         return service;
-    }
-
-    public void setService(int service) {
-        this.service = service;
-    }
-
-    public String getContact() {
-        return contact;
-    }
-
-    public void setContact(String contact) {
-        this.contact = contact;
     }
 
     public int getCode() {
@@ -76,33 +65,51 @@ public class Useful {
         this.code = code;
     }
 
-    public String getStatus() {
-        return status;
+    // Setter Methods
+
+    public void setId(int id) {
+        this.id = id;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getForeas() {
-        return foreas;
-    }
-
-    public void setForeas(String foreas) {
-        this.foreas = foreas;
-    }
-
-    public String getSlug() {
-        return slug;
+    public void setSelected(boolean selected) {
+        this.selected = selected;
     }
 
     public void setSlug(String slug) {
         this.slug = slug;
     }
 
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setService(int service) {
+        this.service = service;
+    }
+
+    public String getStatus() { return status; }
+
+    public void setStatus(String status) { this.status = status; }
+
 
     @Override
     public String toString() {
-        return "app.Useful{" + "id=" + id + ", name=" + name + ", url=" + url + ", foreas=" + foreas + ", perif?=" + perif + '}';
+        return "Useful{" +
+                "id=" + id +
+                ", selected=" + selected +
+                ", slug='" + slug + '\'' +
+                ", url='" + url + '\'' +
+                ", description='" + description + '\'' +
+                ", title='" + title + '\'' +
+                ", service=" + service +
+                '}';
     }
 }

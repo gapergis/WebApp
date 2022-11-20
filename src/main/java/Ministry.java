@@ -1,39 +1,24 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 import java.util.ArrayList;
 
-/**
- * @author Greg
- */
-public class Subcategory {
-
-    private int id;
+public class Ministry {
+    private float id;
     private boolean selected;
-    ArrayList< Object > all_services = new ArrayList < Object > ();
-    private int order;
+    ArrayList< Object > organizations = new ArrayList < Object > ();
     private String title;
     private String slug;
     private String url = null;
     private String description;
-    private int category;
+    private boolean is_authority;
 
 
     // Getter Methods
 
-    public int getId() {
+    public float getId() {
         return id;
     }
 
     public boolean getSelected() {
         return selected;
-    }
-
-    public int getOrder() {
-        return order;
     }
 
     public String getTitle() {
@@ -52,22 +37,18 @@ public class Subcategory {
         return description;
     }
 
-    public int getCategory() {
-        return category;
+    public boolean getIs_authority() {
+        return is_authority;
     }
 
     // Setter Methods
 
-    public void setId(int id) {
+    public void setId(float id) {
         this.id = id;
     }
 
     public void setSelected(boolean selected) {
         this.selected = selected;
-    }
-
-    public void setOrder(int order) {
-        this.order = order;
     }
 
     public void setTitle(String title) {
@@ -86,7 +67,7 @@ public class Subcategory {
         this.description = description;
     }
 
-    public void setCategory(int category) {
-        this.category = category;
+    public void setIs_authority(boolean is_authority) {
+        this.is_authority = is_authority;
     }
 }

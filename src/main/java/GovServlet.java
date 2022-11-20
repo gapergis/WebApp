@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 /**
@@ -14,26 +15,20 @@ import java.util.ArrayList;
 @WebServlet("/GovServlet")
 public class GovServlet extends HttpServlet {
     private static final long serialVersionUID = 102831973239L;
+    private ArrayList<Ministry> min;
     private ArrayList<Organization> org;
     private ArrayList<Category> cat;
     private ArrayList<Subcategory> sub;
     private ArrayList<Useful> usefuls;
     private ArrayList<Service> services;
-
+    private Data data;
+    private LocalDateTime dataTime= LocalDateTime.now();
 
     /**
      * Default constructor.
      */
     public GovServlet() {
-        if (this.services == null) {
-            this.org = Controller.getOrgData();
-            this.cat = Controller.getCatData();
-            this.sub = Controller.getGegData();
-            this.usefuls = new ArrayList<>();
-            this.services = Controller.getAPIServiceData(org, cat, sub, usefuls);
-            this.usefuls.addAll(Controller.getAPIUsefulData(services));
-        }
-        // TODO Auto-generated constructor stub
+
     }
 
     /**
@@ -45,27 +40,38 @@ public class GovServlet extends HttpServlet {
         Controller controller = new Controller();
         CheckController chController = new CheckController();
         CrossCheck cross = new CrossCheck();
+        LocalDateTime now = LocalDateTime.now();
+        if (this.data == null || dataTime.plusHours(5).isBefore(now)) {
+            this.min = Controller.getMinData();
+            this.org = Controller.getOrgData();
+            this.cat = Controller.getCatData();
+            this.sub = Controller.getGegData();
+            this.services = Controller.getAPIServiceData();
+            this.usefuls = Controller.getAPIUsefulData();
+            this.data = new Data(this.min, this.org, this.cat, this.sub, this.services, this.usefuls);
+        }
+
         File result = null;
         //ApiData
         if (request.getParameter("get_data") != null) {
             getServletContext().getRequestDispatcher("/index.jsp").forward(request, response);
         }
         if (request.getParameter("monthly_report") != null) {
-            result = controller.ServiceWriter(services);
+            result = controller.ServiceWriter(this.data);
         }
         if (request.getParameter("check_links_services") != null) {
-            result = chController.checkServices(services);
+            result = chController.checkServices(this.data);
         }
         if (request.getParameter("check_links_usefuls") != null) {
-            result = chController.checkUsefuls(usefuls);
+            result = chController.checkUsefuls(this.data);
         }
         if (request.getParameter("check_Changes_Without") != null) {
             //crossCheck data
-            result = cross.checkGov(org, cat, sub, services);
+            result = cross.checkGov(this.data);
         }
         if (request.getParameter("check_Changes_With") != null) {
             //crossCheck data
-            cross.updateJson(org, cat, sub, services);
+            cross.updateJson(this.data);
         }
 
         if (result != null) {
@@ -80,11 +86,9 @@ public class GovServlet extends HttpServlet {
      * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
      */
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
-        // TODO Auto-generated method stub
         try {
             doGet(request, response);
         } catch (ServletException | IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
 	}

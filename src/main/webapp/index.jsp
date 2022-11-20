@@ -15,7 +15,7 @@
 
 <title>GOV.GR</title>
 </head>
-<body onload="getData()">
+<body onload="fileButton()">
 	<header class="govgr-header">
 		<div class="govgr-header__container">
 			<div class="govgr-header__content">
@@ -102,13 +102,13 @@
 		</div>
 
 		<script>
-			function getData(){
-				if (!sessionStorage.alreadyClicked) {
-					document.getElementById('getdata').click();
-					sessionStorage.alreadyClicked = 1;
-				}
-				fileButton();
-			}
+			// function getData(){
+			// 	if (!sessionStorage.alreadyClicked) {
+			// 		document.getElementById('getdata').click();
+			// 		sessionStorage.alreadyClicked = 1;
+			// 	}
+			// 	fileButton();
+			// }
 
 			function loader() {
 				if (document.getElementById('load').style.display==="none") {

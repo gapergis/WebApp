@@ -42,7 +42,6 @@ public class DownloadServlet extends HttpServlet {
         try {
             doGet(request, response);
         } catch (IOException | ServletException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }

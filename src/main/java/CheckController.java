@@ -1,6 +1,8 @@
+import com.google.gson.Gson;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.json.JSONObject;
 
 import javax.net.ssl.SSLHandshakeException;
 import java.io.*;
@@ -9,7 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.List;
 
 public class CheckController {
 
@@ -44,41 +45,79 @@ public class CheckController {
         return code;
     }
 
-    public File checkServices(ArrayList<Service> services) throws IOException {
+    public File checkServices(Data data) throws IOException {
+        ArrayList<ServiceAction> servAct = new ArrayList<>();
+        Controller controller= new Controller();
         int red = 0, total = 0;
         Integer code;
         int k = 1;
-        for (Service s : services) {
-            if (Controller.isUrlValid(s.getUrlEisodou())) {
-                try {
-                    URL url = new URL(s.getUrlEisodou());
-                    code = getURLResponse(url);
-                    s.setCode(code);
-                    if (code.equals(403) || code.equals(400) || code.equals(404) || code.equals(503) || code.equals(991) || code.equals(993) || code.equals(995) || code.equals(996) || code.equals(0)) {
-                        s.setStatus("red");
-                        red++;
+        for (Service s : data.services) {
+            String orgName= controller.getOrgName(data, s.getOrganization());
+            for (Object ser : s.service_actions) {
+                String jsonInString = new Gson().toJson(ser);
+                JSONObject obj = new JSONObject(jsonInString);
+                String serUrl = obj.getString("url");
+                if (Controller.isUrlValid(serUrl)) {
+                    try {
+                        URL url = new URL(serUrl);
+                        code = getURLResponse(url);
+                        if (code.equals(403) || code.equals(400) || code.equals(404) || code.equals(503) || code.equals(991) || code.equals(993) || code.equals(995) || code.equals(996) || code.equals(0)) {
+                            ServiceAction serAct = new ServiceAction(s.getId(), s.getTitle(), serUrl, orgName, code);
+                            servAct.add(serAct);
+                            red++;
+                        }
+                        total++;
+                    } catch (MalformedURLException ex) {
+                        ex.printStackTrace();
                     }
-                    total++;
-                } catch (MalformedURLException ex) {
-                    ex.printStackTrace();
                 }
-            } else {
-                s.setStatus("invalid");
-                s.setCode(999);
+                if (k % 100 == 0) {
+                    System.out.println("Checking " + k);
+                }
+                k++;
             }
-            if (k % 100 == 0) {
-                System.out.println("Checking " + k + " / " + services.size());
+            for (Object ser : s.regions) {
+                String jsonInString = new Gson().toJson(ser);
+                JSONObject obj = new JSONObject(jsonInString);
+                String serUrl = obj.getString("url");
+                if (Controller.isUrlValid(serUrl)) {
+                    try {
+                        URL url = new URL(serUrl);
+                        code = getURLResponse(url);
+                        if (code.equals(403) || code.equals(400) || code.equals(404) || code.equals(503) || code.equals(991) || code.equals(993) || code.equals(995) || code.equals(996) || code.equals(0)) {
+                            ServiceAction serAct = new ServiceAction(s.getId(), s.getTitle(), serUrl, obj.getString("region_title"), code);
+                            servAct.add(serAct);
+                            red++;
+                        }
+                        total++;
+                    } catch (MalformedURLException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+                if (k % 100 == 0) {
+                    System.out.println("Checking " + k);
+                }
+                k++;
             }
-            k++;
         }
-        return ServiceWriter2(services, red, total, "services");
+        return ServiceWriter2(servAct, red, total);
     }
-
-    public File checkUsefuls(ArrayList<Useful> usefuls) throws IOException {
+    public File checkUsefuls(Data data) throws IOException {
         int red = 0, total = 0;
         Integer code;
         int k = 1;
-        for (Useful u : usefuls) {
+        for (Service s: data.services) {
+            for (Object ul : s.service_region_useful_links) {
+                String jsonInString = new Gson().toJson(ul);
+                JSONObject obj = new JSONObject(jsonInString);
+                Useful usef = new Useful();
+                usef.setUrl(obj.getString("url"));
+                usef.setTitle(obj.getString("title"));
+                usef.setService(s.getId());
+                data.usefuls.add(usef);
+            }
+        }
+        for (Useful u : data.usefuls) {
             if (Controller.isUrlValid(u.getUrl())) {
                 try {
                     URL url = new URL(u.getUrl());
@@ -97,18 +136,18 @@ public class CheckController {
                 u.setCode(999);
             }
             if (k % 100 == 0) {
-                System.out.println("Checking " + k + " / " + usefuls.size());
+                System.out.println("Checking " + k + " / " + data.usefuls.size());
             }
             total++;
             k++;
         }
-        return UsefulWriter2(usefuls, red, total, "usefulLinks");
+        return UsefulWriter2(data, red, total);
     }
 
-    public File ServiceWriter2(List<Service> services, int red, int total, String name) throws IOException {
+    public File ServiceWriter2(ArrayList<ServiceAction> servAct, int red, int total) throws IOException {
         File temp = new File(CheckController.class.getProtectionDomain().getCodeSource().getLocation().getPath());
         String path = temp.getParent();
-        File fileName = new File(path + "/" + name + "_bad.csv");
+        File fileName = new File(path + "/" + "Services_bad.csv");
         FileOutputStream file = new FileOutputStream(fileName);
         try (BufferedWriter wr = new BufferedWriter(new OutputStreamWriter(file, StandardCharsets.UTF_8))) {
             StringBuilder sb = new StringBuilder();
@@ -131,38 +170,32 @@ public class CheckController {
                     .append("Foreas")
                     .append('^')
                     .append("Code")
-                    .append('^')
-                    .append("Status")
                     .append('\n');
-
-            for (Service service : services) {
-                if (service.getStatus().equals("red")) {
-                    sb.append('\n')
-                            .append(service.getId())
-                            .append('^')
-                            .append(service.getName())
-                            .append('^')
-                            .append(service.getUrlEisodou())
-                            .append('^')
-                            .append(service.getOrgTitle())
-                            .append('^')
-                            .append(service.getCode())
-                            .append('^')
-                            .append(service.getStatus());
-                }
+            for (ServiceAction service : servAct) {
+                sb.append('\n')
+                    .append(service.getId())
+                    .append('^')
+                    .append(service.getTitle())
+                    .append('^')
+                    .append(service.getUrl())
+                    .append('^')
+                    .append(service.getOrgTitle())
+                    .append('^')
+                    .append(service.getCode());
             }
             wr.write(sb.toString());
         } catch (FileNotFoundException e) {
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
         return fileName;
     }
 
 
-    public File UsefulWriter2(List<Useful> usefuls, int red, int total, String name) throws IOException {
+    public File UsefulWriter2(Data data, int red, int total) throws IOException {
+        Controller controller = new Controller();
         File temp = new File(CheckController.class.getProtectionDomain().getCodeSource().getLocation().getPath());
         String path = temp.getParent();
-        File fileName = new File(path + "/" + name + "_bad.csv");
+        File fileName = new File(path + "/" + "UsefulLinks_bad.csv");
         FileOutputStream file = new FileOutputStream(fileName);
         try (BufferedWriter wr = new BufferedWriter(new OutputStreamWriter(file, StandardCharsets.UTF_8))) {
             StringBuilder sb = new StringBuilder();
@@ -182,31 +215,27 @@ public class CheckController {
                     .append('^')
                     .append("Link")
                     .append('^')
-                    .append("app.Service")
+                    .append("Service")
                     .append('^')
                     .append("Code")
-                    .append('^')
-                    .append("Status")
                     .append('\n');
-            for (Useful useful : usefuls) {
+            for (Useful useful : data.usefuls) {
                 if (useful.getStatus().equals("red")) {
                     sb.append('\n')
-                            .append(useful.getId())
-                            .append('^')
-                            .append(useful.getName())
-                            .append('^')
-                            .append(useful.getUrl())
-                            .append('^')
-                            .append(useful.getService())
-                            .append('^')
-                            .append(useful.getCode())
-                            .append('^')
-                            .append(useful.getStatus());
+                        .append(useful.getId())
+                        .append('^')
+                        .append(useful.getTitle())
+                        .append('^')
+                        .append(useful.getUrl())
+                        .append('^')
+                        .append(controller.getServName(data, useful.getService()))
+                        .append('^')
+                        .append(useful.getCode());
                 }
             }
             wr.write(sb.toString());
         } catch (FileNotFoundException e) {
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
         return fileName;
     }
