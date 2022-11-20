@@ -319,6 +319,7 @@ public class Controller {
                     .append('^')
                     .append("Ημ. Τροποποίησης")
                     .append('\n');
+
             for (Service service : data.services) {
                 if(!printed.contains(service.getId()) && service.getActive()) {
                     sb.append(service.getId())
